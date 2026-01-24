@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     root: 'src',
+    envDir: '../',  // Look for .env in project root, not src/
     
     // Development server configuration
     server: {

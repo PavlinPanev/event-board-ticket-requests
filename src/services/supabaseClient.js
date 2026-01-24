@@ -8,14 +8,26 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase environment variables');
-    console.error('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env file');
-    console.error('Use the PUBLISHABLE API key from Supabase Dashboard → Settings → API');
-    console.error('Accepts: sb_publishable_xxx (new) or eyJ... JWT (legacy anon key)');
+    const errorMsg = `
+❌ Missing Supabase environment variables!
+
+Please check:
+1. .env file exists in project root
+2. Contains: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+3. Dev server was restarted after creating/editing .env
+
+Current values:
+- VITE_SUPABASE_URL: ${supabaseUrl || '❌ NOT SET'}
+- VITE_SUPABASE_ANON_KEY: ${supabaseKey ? '✅ SET' : '❌ NOT SET'}
+
+Get credentials from: Supabase Dashboard → Settings → API
+    `;
+    console.error(errorMsg);
+    throw new Error('Supabase credentials not configured. Check console for details.');
 }
 
 /**
  * Supabase client instance
  * Singleton pattern - same instance across app
  */
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = createClient(supabaseUrl, supabaseKey);
