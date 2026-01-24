@@ -148,7 +148,7 @@ See [docs/spec.md](docs/spec.md) for detailed schema.
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL | `https://abc123.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase public anon key | `eyJhbGc...` |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase Publishable API key (safe for browser) | `sb_publishable_xxx` or `eyJhbGc...` |
 
 **⚠️ Never commit `.env` file** - It contains secrets. Use `.env.example` as template.
 
@@ -255,7 +255,9 @@ import { renderNavbar } from './components/navbar.js';
 
 **Solution**: Verify credentials in `.env`:
 - URL should include `.supabase.co` domain
-- Anon key should be a long alphanumeric string
+- Publishable key (ANON_KEY) should be either:
+  - New format: `sb_publishable_` followed by random characters
+  - Legacy format: JWT string starting with `eyJ`
 - Check that Supabase project is active
 
 ## 📞 Support

@@ -340,7 +340,8 @@ Keep secrets in `.env` (not committed):
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+# Use the PUBLISHABLE API key (safe for browser), not the secret key
+VITE_SUPABASE_ANON_KEY=your-publishable-key
 ```
 
 Reference in code:

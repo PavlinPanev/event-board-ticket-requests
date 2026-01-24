@@ -38,9 +38,16 @@ Complete step-by-step guide to configure Supabase backend for the Event Board ap
 Once project is ready:
 
 1. Go to **Settings** (⚙️ icon in sidebar) → **API**
-2. Copy the following values:
+2. Click on **"Publishable and secret API keys"** tab (or **"Legacy API Keys"** tab if you don't see the new keys)
+3. Copy the following values:
    - **Project URL**: `https://your-project-id.supabase.co`
-   - **API Key (anon public)**: `eyJhbGc...` (long JWT token)
+   - **Publishable API Key**: Starts with `sb_publishable_...` (new format) OR `eyJhbGc...` (legacy JWT format)
+   
+**Note:** 
+- If you see **"Create new API Keys"** button, click it to generate the new format keys (`sb_publishable_...`)
+- The new format is recommended but the legacy JWT-based `anon` key still works
+- Use the **Publishable key** for client-side code (safe to expose in browser)
+- The **Secret key** (`sb_secret_...` or `service_role`) should only be used in server-side code and never committed to git
 
 ---
 
@@ -64,10 +71,18 @@ Open `.env` and paste:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
+# New format (recommended):
+VITE_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# OR legacy format (still works):
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Replace** with your actual values from Step 1.3.
+
+**⚠️ Important:** 
+- Use the **Publishable API Key** (starts with `sb_publishable_` or legacy JWT `eyJ...`)
+- **Never** use the Secret key (`sb_secret_...`) or `service_role` key in client-side code
+- The Publishable key is safe for client-side use in the browser
 
 ### 2.3 Verify `.gitignore`
 
@@ -84,6 +99,28 @@ Should contain:
 ```
 
 ✅ If `.env` is listed, you're safe. **Never commit real credentials.**
+
+---
+
+### ⚠️ Important: Publishable vs Secret Keys
+
+**Supabase now provides two types of API keys:**
+
+| Key Type | Format | Usage | Safe for Client? | Notes |
+|----------|--------|-------|------------------|-------|
+| **Publishable** | `sb_publishable_xxx` (new)<br>OR `eyJ...` JWT (legacy `anon`) | Client-side (browser) | ✅ **YES** | This is what we use in `.env` |
+| **Secret** | `sb_secret_xxx` (new)<br>OR `eyJ...` JWT (legacy `service_role`) | Server-side only | ❌ **NO** | Never expose in client code or git |
+
+**Key Format Transition:**
+- **New format** (`sb_publishable_`, `sb_secret_`): Recommended, easier to rotate, better security
+- **Legacy format** (JWT `anon`, `service_role`): Still supported during transition period
+- Both formats work, but migrate to new format when possible
+
+**In this project:**
+- We use the **Publishable API key** in `VITE_SUPABASE_ANON_KEY` (works with both formats)
+- This is safe to use in browser because Row Level Security (RLS) protects your data
+- The Publishable key only allows operations permitted by your RLS policies
+- **Never** use the Secret key in client-side code - it bypasses RLS!
 
 ---
 
