@@ -1,10 +1,15 @@
 import { renderNavbar } from '../components/navbar.js';
+import { requireAdmin } from '../utils/guards.js';
 
 /**
  * Initialize admin panel page
  */
 async function init() {
     try {
+        // Require admin privileges
+        const user = await requireAdmin();
+        if (!user) return;
+        
         renderNavbar('admin');
         
         // Page initialization

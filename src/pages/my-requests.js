@@ -1,10 +1,15 @@
 import { renderNavbar } from '../components/navbar.js';
+import { requireAuth } from '../utils/guards.js';
 
 /**
  * Initialize my requests page
  */
 async function init() {
     try {
+        // Require authentication
+        const user = await requireAuth();
+        if (!user) return;
+        
         renderNavbar('my-requests');
         
         // Page initialization
