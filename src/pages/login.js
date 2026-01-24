@@ -1,5 +1,5 @@
 import { renderNavbar } from '../components/navbar.js';
-import { login, getSession } from '../services/authService.js';
+import { login, getSession, ensureProfile } from '../services/authService.js';
 
 /**
  * Initialize login page
@@ -138,6 +138,9 @@ async function handleLogin(e) {
         if (!user) {
             throw new Error('Login failed. Please check your credentials.');
         }
+        
+        // Ensure profile exists
+        await ensureProfile();
         
         // Success - redirect to home
         window.location.href = '/index.html';

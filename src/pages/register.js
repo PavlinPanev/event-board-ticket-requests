@@ -1,6 +1,5 @@
 import { renderNavbar } from '../components/navbar.js';
-import { register, getSession } from '../services/authService.js';
-import { supabase } from '../services/supabaseClient.js';
+import { register, getSession, ensureProfile } from '../services/authService.js';
 
 /**
  * Initialize register page
@@ -183,18 +182,15 @@ async function handleRegister(e) {
             throw new Error('Registration failed. Please try again.');
         }
         
-        // Create profile entry
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-                id: user.id,
-                display_name: displayName,
-                role: 'user'
-            });
+        // Create profile entry with display name
+        const { error: profileError } = await ensureProfile({
+            display_name: displayName,
+            role: 'user'
+        });
         
         if (profileError) {
             console.error('Profile creation error:', profileError);
-            // Continue anyway - profile can be created later
+            // Continue anyway - login will attempt to create profile again
         }
         
         // Success
