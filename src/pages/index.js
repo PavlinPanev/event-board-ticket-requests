@@ -1,29 +1,53 @@
 import { renderNavbar } from '../components/navbar.js';
 import { getPublishedEvents } from '../services/eventsService.js';
-import { formatDate, escapeHtml, truncate } from '../utils/helpers.js';
+import { renderEventCards } from '../components/eventCard.js';
+import { escapeHtml } from '../utils/helpers.js';
+
+// Store all events for client-side filtering
+let allEvents = [];
 
 /**
- * Render event card
- * @param {Object} event - Event object
+ * Filter events by search query
+ * @param {Array} events - All events
+ * @param {string} query - Search query
+ * @returns {Array} Filtered events
+ */
+function filterEvents(events, query) {
+    if (!query || query.trim() === '') {
+        return events;
+    }
+    
+    const lowerQuery = query.toLowerCase();
+    return events.filter(event => {
+        const title = (event.title || '').toLowerCase();
+        const description = (event.description || '').toLowerCase();
+        const venueName = (event.venue?.name || '').toLowerCase();
+        
+        return title.includes(lowerQuery) || 
+               description.includes(lowerQuery) || 
+               venueName.includes(lowerQuery);
+    });
+}
+
+/**
+ * Render search bar
  * @returns {string} HTML string
  */
-function createEventCard(event) {
-    const venue = event.venue || {};
+function renderSearchBar() {
     return `
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">${escapeHtml(event.title)}</h5>
-                    <p class="card-text text-muted small">
-                        <i class="bi bi-calendar-event"></i> ${formatDate(event.starts_at)}
-                    </p>
-                    <p class="card-text text-muted small">
-                        <i class="bi bi-geo-alt"></i> ${escapeHtml(venue.name || 'TBA')}
-                    </p>
-                    ${event.description ? `<p class="card-text">${escapeHtml(truncate(event.description, 100))}</p>` : ''}
-                </div>
-                <div class="card-footer bg-white border-top-0">
-                    <a href="/event-details.html?id=${event.id}" class="btn btn-primary btn-sm w-100">View Details</a>
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        class="form-control" 
+                        placeholder="Search events by title, description, or venue..."
+                        aria-label="Search events"
+                    >
                 </div>
             </div>
         </div>
@@ -31,24 +55,56 @@ function createEventCard(event) {
 }
 
 /**
- * Render events list
- * @param {Array} events - Array of events
+ * Render events with search bar
+ * @param {Array} events - Filtered events to display
  * @param {HTMLElement} container - Container element
  */
-function renderEvents(events, container) {
-    if (events.length === 0) {
-        container.innerHTML = `
-            <div class="alert alert-info">
-                <h5>No events found</h5>
-                <p>There are currently no published events. Check back later!</p>
-            </div>
-        `;
-        return;
-    }
+function renderEventsPage(events, container) {
+    const searchBar = renderSearchBar();
+    const eventCards = renderEventCards(events);
     
     container.innerHTML = `
-        <div class="row">
-            ${events.map(createEventCard).join('')}
+        ${searchBar}
+        <div id="events-container">
+            ${eventCards}
+        </div>
+    `;
+    
+    // Attach search listener
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value;
+        const filtered = filterEvents(allEvents, query);
+        const eventsContainer = document.getElementById('events-container');
+        eventsContainer.innerHTML = renderEventCards(filtered);
+    });
+}
+
+/**
+ * Show loading state
+ * @param {HTMLElement} container - Container element
+ */
+function showLoading(container) {
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-3">Loading events...</p>
+        </div>
+    `;
+}
+
+/**
+ * Show error state
+ * @param {HTMLElement} container - Container element
+ * @param {string} message - Error message
+ */
+function showError(container, message) {
+    container.innerHTML = `
+        <div class="alert alert-danger">
+            <h5><i class="bi bi-exclamation-triangle"></i> Failed to load events</h5>
+            <p>${escapeHtml(message)}</p>
         </div>
     `;
 }
@@ -60,30 +116,29 @@ async function init() {
     try {
         renderNavbar('index');
         
-        // Page initialization
         const contentArea = document.getElementById('content');
-        contentArea.innerHTML = '<p class="text-muted">Loading events...</p>';
+        
+        // Show loading state
+        showLoading(contentArea);
         
         // Fetch events with error handling
         const { data: events, error } = await getPublishedEvents();
         
         if (error) {
-            contentArea.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5>Failed to load events</h5>
-                    <p>${escapeHtml(error.message)}</p>
-                </div>
-            `;
+            showError(contentArea, error.message);
             return;
         }
         
-        // Render events
-        renderEvents(events, contentArea);
+        // Store events for filtering
+        allEvents = events;
+        
+        // Render events with search
+        renderEventsPage(events, contentArea);
         
     } catch (error) {
         console.error('Page initialization failed:', error);
-        document.getElementById('content').innerHTML = 
-            '<div class="alert alert-danger">Failed to load page</div>';
+        const contentArea = document.getElementById('content');
+        showError(contentArea, 'An unexpected error occurred. Please try again later.');
     }
 }
 
