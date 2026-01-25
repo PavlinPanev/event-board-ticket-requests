@@ -16,12 +16,21 @@ export function formatDate(dateString) {
 }
 
 /**
+ * Format date and time for display (alias for formatDate)
+ * @param {string} isoString - ISO date string
+ * @returns {string} Formatted date and time
+ */
+export function formatDateTime(isoString) {
+    return formatDate(isoString);
+}
+
+/**
  * Escape HTML to prevent XSS
- * @param {string} text - Text to escape
+ * @param {string} str - Text to escape
  * @returns {string} Escaped text
  */
-export function escapeHtml(text) {
-    if (!text) return '';
+export function escapeHtml(str) {
+    if (!str) return '';
     const map = {
         '&': '&amp;',
         '<': '&lt;',
@@ -29,7 +38,7 @@ export function escapeHtml(text) {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return String(str).replace(/[&<>"']/g, m => map[m]);
 }
 
 /**
@@ -41,4 +50,25 @@ export function escapeHtml(text) {
 export function truncate(text, maxLength = 100) {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
+}
+
+/**
+ * Get URL query parameter by name
+ * @param {string} name - Parameter name
+ * @returns {string|null} Parameter value or null if not found
+ */
+export function getQueryParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+/**
+ * Set URL query parameter (updates browser URL without reload)
+ * @param {string} name - Parameter name
+ * @param {string} value - Parameter value
+ */
+export function setQueryParam(name, value) {
+    const url = new URL(window.location);
+    url.searchParams.set(name, value);
+    window.history.pushState({}, '', url);
 }
