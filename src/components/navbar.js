@@ -4,6 +4,7 @@
  */
 
 import { getSession, logout } from '../services/authService.js';
+import { supabase } from '../services/supabaseClient.js';
 
 export async function renderNavbar(currentPage = '') {
     const navbarContainer = document.getElementById('navbar-container');
@@ -70,6 +71,12 @@ function createNavbarMarkup(currentPage, user = null) {
                                     <li><h6 class="dropdown-header">${user.email}</h6></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
+                                        <button class="dropdown-item" id="toggle-role-btn">
+                                            🔄 Toggle Role (Current: <span id="current-role">Loading...</span>)
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
                                         <a class="dropdown-item" href="#" id="logout-btn">
                                             Logout
                                         </a>
@@ -100,6 +107,7 @@ function createNavbarMarkup(currentPage, user = null) {
  */
 function attachNavbarEventListeners() {
     const logoutBtn = document.getElementById('logout-btn');
+    const toggleRoleBtn = document.getElementById('toggle-role-btn');
     
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
@@ -114,5 +122,87 @@ function attachNavbarEventListeners() {
                 alert('Failed to logout. Please try again.');
             }
         });
+    }
+    
+    if (toggleRoleBtn) {
+        // Load and display current role
+        loadCurrentRole();
+        
+        toggleRoleBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await toggleUserRole();
+        });
+    }
+}
+
+/**
+ * Load and display current user role
+ */
+async function loadCurrentRole() {
+    try {
+        const { user } = await getSession();
+        if (!user) return;
+        
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        
+        const roleSpan = document.getElementById('current-role');
+        if (roleSpan && profile) {
+            roleSpan.textContent = profile.role;
+            roleSpan.style.fontWeight = 'bold';
+            roleSpan.style.color = profile.role === 'admin' ? '#dc3545' : '#0d6efd';
+        }
+    } catch (error) {
+        console.error('Load role error:', error);
+    }
+}
+
+/**
+ * Toggle user role between 'user' and 'admin' (for testing/evaluation purposes)
+ */
+async function toggleUserRole() {
+    try {
+        const { user } = await getSession();
+        if (!user) {
+            alert('You must be logged in to toggle role');
+            return;
+        }
+        
+        // Get current role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        
+        if (!profile) {
+            alert('Profile not found. Please contact administrator.');
+            return;
+        }
+        
+        // Toggle role
+        const newRole = profile.role === 'admin' ? 'user' : 'admin';
+        
+        const { error } = await supabase
+            .from('profiles')
+            .update({ role: newRole })
+            .eq('id', user.id);
+        
+        if (error) {
+            console.error('Toggle role error:', error);
+            alert('Failed to toggle role: ' + error.message);
+            return;
+        }
+        
+        // Show success message and reload
+        alert(`Role changed to: ${newRole.toUpperCase()}\n\nPage will reload to apply changes.`);
+        window.location.reload();
+        
+    } catch (error) {
+        console.error('Toggle role error:', error);
+        alert('An error occurred while toggling role.');
     }
 }

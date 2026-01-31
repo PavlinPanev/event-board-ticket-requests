@@ -221,6 +221,26 @@ See `.github/copilot-instructions.md` for RLS policy templates.
 
 See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detailed conventions.
 
+## 🧪 Testing & Evaluation
+
+### Role Toggle Feature (For Examiners)
+
+The application includes a **built-in role toggle** for easy testing of admin vs. user permissions:
+
+1. **Login** to the application
+2. **Click "Account"** dropdown in the navbar (top-right)
+3. **View current role** - Shows as "user" or "admin" (color-coded)
+4. **Click "Toggle Role"** to switch between user and admin
+5. **Page reloads** automatically to apply permission changes
+
+**What you can test:**
+- **As User**: Browse events, submit ticket requests, view your requests
+- **As Admin**: Access Admin Panel, approve/reject requests, manage all events
+
+**No SQL knowledge required** - Switch roles with one click!
+
+See [docs/DEBUG-ADMIN-ACCESS.md](docs/DEBUG-ADMIN-ACCESS.md) for alternative SQL methods.
+
 ## 📱 Browser Support
 
 - Chrome/Edge (latest)
