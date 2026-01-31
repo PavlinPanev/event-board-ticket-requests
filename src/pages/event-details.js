@@ -25,11 +25,33 @@ import { createTicketRequest } from '../services/ticketRequestsService.js';
 import { getSession } from '../services/authService.js';
 import { getQueryParam, formatDateTime, escapeHtml } from '../utils/helpers.js';
 import { getAssetUrl, getEventAssets, uploadEventAsset, deleteAsset } from '../services/storageService.js';
+import { isAdmin } from '../utils/guards.js';
 
 // Global state for current event and user
 let currentEvent = null;
 let currentUser = null;
 let currentEventId = null;
+
+/**
+ * Check if current user can manage assets
+ * @param {Object} user - Current user object
+ * @param {Object} event - Event object
+ * @returns {Promise<boolean>} True if user can manage assets
+ */
+async function canManageAssets(user, event) {
+    if (!user || !event) {
+        return false;
+    }
+    
+    // Check if user is admin
+    const userIsAdmin = await isAdmin();
+    if (userIsAdmin) {
+        return true;
+    }
+    
+    // Check if user is event owner
+    return user.id === event.created_by;
+}
 
 /**
  * DEBUG HELPER: Verify uploaded asset URL accessibility
@@ -538,9 +560,7 @@ async function loadAssets() {
         );
         
         // Check if user can manage assets (owner or admin)
-        const canManage = currentUser && currentEvent && 
-                         (currentUser.id === currentEvent.created_by || 
-                          currentUser.user_metadata?.role === 'admin');
+        const canManage = await canManageAssets(currentUser, currentEvent);
         
         // Render assets
         container.innerHTML = renderAssets(assetsWithUrls, canManage);
