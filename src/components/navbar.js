@@ -30,7 +30,7 @@ function createNavbarMarkup(currentPage, user = null) {
     return `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
-                <a class="navbar-brand" href="/">
+                <a class="navbar-brand" href="/index.html">
                     📋 Event Board
                 </a>
                 
