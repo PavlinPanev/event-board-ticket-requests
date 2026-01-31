@@ -23,6 +23,7 @@ export default defineConfig({
                 index: 'src/index.html',
                 eventDetails: 'src/event-details.html',
                 createEvent: 'src/create-event.html',
+                editEvent: 'src/edit-event.html',
                 myRequests: 'src/my-requests.html',
                 admin: 'src/admin.html',
                 login: 'src/login.html',

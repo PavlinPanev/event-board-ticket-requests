@@ -225,9 +225,10 @@ async function testUrlAccessibility(url) {
  * Render event details
  * @param {Object} event - Event object with venue
  * @param {Object|null} user - Current user or null
+ * @param {boolean} canEdit - Whether user can edit this event
  * @returns {string} HTML string
  */
-function renderEventDetails(event, user) {
+function renderEventDetails(event, user, canEdit = false) {
     const venue = event.venue || {};
     
     return `
@@ -235,7 +236,20 @@ function renderEventDetails(event, user) {
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
-                        <h2 class="card-title mb-3">${escapeHtml(event.title)}</h2>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h2 class="card-title mb-0">${escapeHtml(event.title)}</h2>
+                            ${canEdit ? `
+                                <a href="/edit-event.html?id=${event.id}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i> Edit Event
+                                </a>
+                            ` : ''}
+                        </div>
+                        
+                        ${event.status !== 'published' ? `
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="bi bi-eye-slash"></i> This event is <strong>${event.status}</strong> and not visible to the public.
+                            </div>
+                        ` : ''}
                         
                         <div class="mb-3">
                             <p class="mb-2">
@@ -809,8 +823,16 @@ async function init() {
         currentUser = user;
         currentEventId = eventId;
         
+        // Check if user can edit this event
+        let canEdit = false;
+        if (user) {
+            const userIsAdmin = await isAdmin();
+            const isOwner = user.id === event.created_by;
+            canEdit = isOwner || userIsAdmin;
+        }
+        
         // Render event details
-        contentArea.innerHTML = renderEventDetails(event, user);
+        contentArea.innerHTML = renderEventDetails(event, user, canEdit);
         
         // Attach form handler if user is authenticated
         if (user) {

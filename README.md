@@ -4,7 +4,7 @@ A modern web platform for managing events and ticket requests built with **Vite*
 
 ## 🌐 Live URL
 
-[Deployment Link - Coming Soon](https://placeholder-url.com)
+[Live Demo](https://event-board-ticket-requests.netlify.app)
 
 ## ✨ Features
 

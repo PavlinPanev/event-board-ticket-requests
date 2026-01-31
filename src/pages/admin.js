@@ -298,6 +298,9 @@ function renderEventRow(event) {
     }
     
     actionButtons += `
+        <a href="edit-event.html?id=${event.id}" class="btn btn-outline-primary btn-sm" title="Edit">
+            <i class="bi bi-pencil"></i>
+        </a>
         <button class="btn btn-outline-danger btn-sm btn-delete-event" data-event-id="${event.id}" title="Delete">
             <i class="bi bi-trash"></i>
         </button>
