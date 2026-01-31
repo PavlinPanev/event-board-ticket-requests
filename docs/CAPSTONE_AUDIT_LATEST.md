@@ -18,7 +18,7 @@
 
 | Category | Weight | Score | Max | Notes |
 |----------|--------|-------|-----|-------|
-| **Screens/Functionality** | 25% | 25 | 25 | 7 screens, all fully functional |
+| **Screens/Functionality** | 25% | 25 | 25 | 8 screens, all fully functional |
 | **CRUD Operations** | 20% | 20 | 20 | Full CRUD for 2 entities |
 | **Supabase (DB/Auth/Storage)** | 20% | 18 | 20 | Storage UI implemented, backend complete |
 | **Security/RLS** | 15% | 15 | 15 | 27+ policies, security audit done |
@@ -52,14 +52,15 @@ The project demonstrates **strong technical competency** with a clean architectu
 | # | Screen | Status | File | Functionality |
 |---|--------|--------|------|---------------|
 | 1 | Events List (Home) | ✅ PASS | [src/index.html](../src/index.html), [src/pages/index.js](../src/pages/index.js) | Browse published events, search filter, Bootstrap grid |
-| 2 | Event Details | ✅ PASS | [src/event-details.html](../src/event-details.html), [src/pages/event-details.js](../src/pages/event-details.js) | Event info, ticket request form, **asset gallery with upload** |
+| 2 | Event Details | ✅ PASS | [src/event-details.html](../src/event-details.html), [src/pages/event-details.js](../src/pages/event-details.js) | Event info, ticket request form, **asset gallery with upload**, edit link |
 | 3 | Create Event | ✅ PASS | [src/create-event.html](../src/create-event.html), [src/pages/create-event.js](../src/pages/create-event.js) | Form with validation, venue dropdown, creates as draft |
-| 4 | My Requests | ✅ PASS | [src/my-requests.html](../src/my-requests.html), [src/pages/my-requests.js](../src/pages/my-requests.js) | Table view, status badges, cancel functionality |
-| 5 | Login | ✅ PASS | [src/login.html](../src/login.html), [src/pages/login.js](../src/pages/login.js) | Email/password auth, error handling, redirects |
-| 6 | Register | ✅ PASS | [src/register.html](../src/register.html), [src/pages/register.js](../src/pages/register.js) | User signup, profile creation, display name |
-| 7 | Admin Panel | ✅ PASS | [src/admin.html](../src/admin.html), [src/pages/admin.js](../src/pages/admin.js) | Dashboard stats, pending requests table, events moderation, approve/reject |
+| 4 | **Edit Event** | ✅ PASS | [src/edit-event.html](../src/edit-event.html), [src/pages/edit-event.js](../src/pages/edit-event.js) | **NEW** - Edit form, status change, delete, quick actions |
+| 5 | My Requests | ✅ PASS | [src/my-requests.html](../src/my-requests.html), [src/pages/my-requests.js](../src/pages/my-requests.js) | Table view, status badges, cancel functionality |
+| 6 | Login | ✅ PASS | [src/login.html](../src/login.html), [src/pages/login.js](../src/pages/login.js) | Email/password auth, error handling, redirects |
+| 7 | Register | ✅ PASS | [src/register.html](../src/register.html), [src/pages/register.js](../src/pages/register.js) | User signup, profile creation, display name |
+| 8 | Admin Panel | ✅ PASS | [src/admin.html](../src/admin.html), [src/pages/admin.js](../src/pages/admin.js) | Dashboard stats, pending requests table, events moderation, approve/reject |
 
-**Result:** ✅ **7/5 screens** - EXCEEDS requirement
+**Result:** ✅ **8/5 screens** - EXCEEDS requirement
 
 ### 3. Database Tables Requirement (4+ tables)
 
