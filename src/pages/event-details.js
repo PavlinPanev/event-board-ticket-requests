@@ -24,7 +24,12 @@ import { getEventById } from '../services/eventsService.js';
 import { createTicketRequest } from '../services/ticketRequestsService.js';
 import { getSession } from '../services/authService.js';
 import { getQueryParam, formatDateTime, escapeHtml } from '../utils/helpers.js';
-import { getAssetUrl } from '../services/storageService.js';
+import { getAssetUrl, getEventAssets, uploadEventAsset, deleteAsset } from '../services/storageService.js';
+
+// Global state for current event and user
+let currentEvent = null;
+let currentUser = null;
+let currentEventId = null;
 
 /**
  * DEBUG HELPER: Verify uploaded asset URL accessibility
@@ -233,6 +238,16 @@ function renderEventDetails(event, user) {
                 <a href="/index.html" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Events
                 </a>
+                
+                <!-- Assets Section -->
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Assets</h5>
+                        <div id="assets-container">
+                            <p class="text-muted">Loading assets...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="col-lg-4">
@@ -380,6 +395,287 @@ async function handleTicketRequest(e, eventId) {
 }
 
 /**
+ * Render assets section
+ * @param {Array} assets - Array of asset objects
+ * @param {boolean} canManage - Whether user can manage assets
+ * @returns {string} HTML string
+ */
+function renderAssets(assets, canManage = false) {
+    let html = '';
+    
+    // Upload form for authorized users
+    if (canManage) {
+        html += `
+            <form id="asset-upload-form" class="mb-4">
+                <div class="mb-3">
+                    <label for="asset-file" class="form-label">Upload Asset</label>
+                    <input 
+                        type="file" 
+                        class="form-control" 
+                        id="asset-file" 
+                        name="file"
+                        accept="image/*,.pdf"
+                        required
+                    >
+                    <div class="form-text">
+                        Max 5MB. Allowed types: images (JPG, PNG, GIF, WebP, SVG) and PDF
+                    </div>
+                </div>
+                <div id="upload-message"></div>
+                <button type="submit" class="btn btn-primary btn-sm" id="upload-btn">
+                    <i class="bi bi-upload"></i> Upload
+                </button>
+            </form>
+            <hr>
+        `;
+    }
+    
+    // Empty state
+    if (!assets || assets.length === 0) {
+        html += '<p class="text-muted small">No assets uploaded yet.</p>';
+        return html;
+    }
+    
+    // Separate images and other files
+    const images = assets.filter(a => a.mime_type && a.mime_type.startsWith('image/'));
+    const others = assets.filter(a => !a.mime_type || !a.mime_type.startsWith('image/'));
+    
+    // Render images in grid
+    if (images.length > 0) {
+        html += '<div class="row g-2 mb-3">';
+        images.forEach(asset => {
+            html += `
+                <div class="col-6 col-md-4" data-asset-id="${asset.id}">
+                    <div class="position-relative">
+                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer">
+                            <img 
+                                src="${escapeHtml(asset.url || '')}" 
+                                alt="${escapeHtml(asset.file_name)}" 
+                                class="img-thumbnail w-100" 
+                                style="height: 120px; object-fit: cover; cursor: pointer;"
+                                loading="lazy"
+                            >
+                        </a>
+                        ${canManage ? `
+                            <button 
+                                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 delete-asset-btn" 
+                                data-asset-id="${asset.id}"
+                                data-file-path="${escapeHtml(asset.file_path)}"
+                                style="padding: 2px 6px; font-size: 11px;"
+                                title="Delete ${escapeHtml(asset.file_name)}"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <small class="text-muted d-block mt-1" style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${escapeHtml(asset.file_name)}
+                    </small>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    
+    // Render other files as list
+    if (others.length > 0) {
+        html += '<div class="list-group list-group-flush">';
+        others.forEach(asset => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0" data-asset-id="${asset.id}">
+                    <div class="flex-grow-1">
+                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                            <i class="bi bi-file-earmark-pdf text-danger"></i>
+                            ${escapeHtml(asset.file_name)}
+                        </a>
+                        <small class="text-muted d-block">
+                            ${(asset.file_size / 1024).toFixed(1)} KB
+                        </small>
+                    </div>
+                    ${canManage ? `
+                        <button 
+                            class="btn btn-danger btn-sm delete-asset-btn" 
+                            data-asset-id="${asset.id}"
+                            data-file-path="${escapeHtml(asset.file_path)}"
+                        >
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    
+    return html;
+}
+
+/**
+ * Load and display event assets
+ */
+async function loadAssets() {
+    const container = document.getElementById('assets-container');
+    if (!container) return;
+    
+    try {
+        container.innerHTML = '<p class="text-muted small">Loading assets...</p>';
+        
+        // Fetch assets
+        const { data: assets, error } = await getEventAssets(currentEventId);
+        
+        if (error) {
+            console.error('Failed to load assets:', error);
+            container.innerHTML = '<p class="text-danger small">Failed to load assets</p>';
+            return;
+        }
+        
+        // Add URLs to assets
+        const assetsWithUrls = await Promise.all(
+            (assets || []).map(async (asset) => {
+                const { data: url } = await getAssetUrl(asset.file_path);
+                return { ...asset, url };
+            })
+        );
+        
+        // Check if user can manage assets (owner or admin)
+        const canManage = currentUser && currentEvent && 
+                         (currentUser.id === currentEvent.created_by || 
+                          currentUser.user_metadata?.role === 'admin');
+        
+        // Render assets
+        container.innerHTML = renderAssets(assetsWithUrls, canManage);
+        
+        // Attach event listeners
+        if (canManage) {
+            attachAssetEventListeners();
+        }
+        
+    } catch (error) {
+        console.error('Load assets error:', error);
+        container.innerHTML = '<p class="text-danger small">An error occurred</p>';
+    }
+}
+
+/**
+ * Handle asset upload
+ * @param {Event} e - Form submit event
+ */
+async function handleUpload(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const fileInput = form.querySelector('#asset-file');
+    const uploadBtn = form.querySelector('#upload-btn');
+    const messageDiv = form.querySelector('#upload-message');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        messageDiv.innerHTML = '<div class="alert alert-warning alert-dismissible fade show" role="alert">Please select a file<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        return;
+    }
+    
+    // Disable form
+    uploadBtn.disabled = true;
+    fileInput.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Uploading...';
+    
+    try {
+        // Upload file
+        const { data, error } = await uploadEventAsset({ eventId: currentEventId, file });
+        
+        if (error) {
+            messageDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${escapeHtml(error.message)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+            return;
+        }
+        
+        // Success
+        messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">File uploaded successfully!<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        form.reset();
+        
+        // Debug helper
+        if (data && data.asset) {
+            await debugAssetUrl(data.asset.file_path, data.asset.file_name);
+        }
+        
+        // Reload assets
+        await loadAssets();
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        messageDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">An unexpected error occurred<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    } finally {
+        // Re-enable form
+        uploadBtn.disabled = false;
+        fileInput.disabled = false;
+        uploadBtn.innerHTML = '<i class="bi bi-upload"></i> Upload';
+    }
+}
+
+/**
+ * Handle asset deletion
+ * @param {string} assetId - Asset ID
+ * @param {string} filePath - File path in storage
+ */
+async function handleDelete(assetId, filePath) {
+    if (!confirm('Are you sure you want to delete this asset?')) {
+        return;
+    }
+    
+    const assetElement = document.querySelector(`[data-asset-id="${assetId}"]`);
+    if (assetElement) {
+        assetElement.style.opacity = '0.5';
+        assetElement.style.pointerEvents = 'none';
+    }
+    
+    try {
+        const { error } = await deleteAsset({ id: assetId, file_path: filePath });
+        
+        if (error) {
+            alert(`Failed to delete asset: ${error.message}`);
+            if (assetElement) {
+                assetElement.style.opacity = '1';
+                assetElement.style.pointerEvents = 'auto';
+            }
+            return;
+        }
+        
+        // Reload assets
+        await loadAssets();
+        
+    } catch (error) {
+        console.error('Delete error:', error);
+        alert('An unexpected error occurred');
+        if (assetElement) {
+            assetElement.style.opacity = '1';
+            assetElement.style.pointerEvents = 'auto';
+        }
+    }
+}
+
+/**
+ * Attach event listeners for asset management
+ */
+function attachAssetEventListeners() {
+    // Upload form
+    const uploadForm = document.getElementById('asset-upload-form');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', handleUpload);
+    }
+    
+    // Delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-asset-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const assetId = btn.dataset.assetId;
+            const filePath = btn.dataset.filePath;
+            handleDelete(assetId, filePath);
+        });
+    });
+}
+
+/**
  * Show error page
  * @param {string} message - Error message
  * @param {HTMLElement} container - Container element
@@ -431,6 +727,11 @@ async function init() {
         const { session } = await getSession();
         const user = session?.user || null;
         
+        // Store in global state
+        currentEvent = event;
+        currentUser = user;
+        currentEventId = eventId;
+        
         // Render event details
         contentArea.innerHTML = renderEventDetails(event, user);
         
@@ -441,6 +742,9 @@ async function init() {
                 form.addEventListener('submit', (e) => handleTicketRequest(e, eventId));
             }
         }
+        
+        // Load assets
+        await loadAssets();
         
     } catch (error) {
         console.error('Page initialization failed:', error);
