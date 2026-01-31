@@ -2,67 +2,130 @@
  * Storage Service
  * Handles file uploads to Supabase Storage and event_assets table management.
  * 
- * NOTE: This implementation assumes the 'event-assets' bucket is PUBLIC.
- * If the bucket is configured as PRIVATE, replace getAssetUrl() with signed URLs:
+ * IMPORTANT: This implementation assumes the 'event-assets' bucket is PUBLIC.
+ * If the bucket is configured as PRIVATE, URLs will return 403 errors.
  * 
- * const { data, error } = await supabase.storage
- *   .from('event-assets')
- *   .createSignedUrl(filePath, 3600); // expires in 1 hour
+ * To verify bucket is public:
+ * 1. Upload a test file
+ * 2. Get its public URL with getAssetUrl()
+ * 3. Open the URL in an INCOGNITO/PRIVATE browser window
+ * 4. File should load without authentication
  * 
- * return { data: data?.signedUrl, error };
+ * If you get 403, enable public access:
+ * Supabase Dashboard → Storage → event-assets → Settings → Enable "Public bucket"
  */
 
 import { supabase } from './supabaseClient.js';
-import { getCurrentUser } from './authService.js';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+const ALLOWED_MIME_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
+    'application/pdf'
+];
+
+/**
+ * Sanitize file name by replacing spaces with hyphens and removing unsafe characters
+ * @param {string} name - Original file name
+ * @returns {string} Sanitized file name
+ */
+export function sanitizeFileName(name) {
+    if (!name) return 'file';
+    
+    return name
+        .replace(/\s+/g, '-')                    // Replace spaces with hyphens
+        .replace(/[^a-zA-Z0-9._-]/g, '')         // Remove unsafe characters
+        .replace(/^\.+/, '')                     // Remove leading dots
+        .replace(/\.+$/, '')                     // Remove trailing dots
+        .replace(/-+/g, '-')                     // Collapse multiple hyphens
+        .toLowerCase()                           // Convert to lowercase
+        .substring(0, 100);                      // Limit length
+}
+
+/**
+ * Build storage path for an event asset
+ * @param {string} eventId - UUID of the event
+ * @param {string} fileName - Original or sanitized file name
+ * @returns {string} Full storage path (e.g., 'events/123/1234567890-image.jpg')
+ */
+export function buildAssetPath(eventId, fileName) {
+    const timestamp = Date.now();
+    const sanitized = sanitizeFileName(fileName);
+    return `events/${eventId}/${timestamp}-${sanitized}`;
+}
 
 /**
  * Upload an event asset file to storage
- * @param {string} eventId - UUID of the event
- * @param {File} file - File object from input
- * @returns {Promise<{data: {filePath: string, assetRecord: object}|null, error: Error|null}>}
+ * @param {Object} params - Upload parameters
+ * @param {string} params.eventId - UUID of the event
+ * @param {File} params.file - File object from input
+ * @returns {Promise<{data: {asset: object, url: string}|null, error: Error|null}>}
  */
-export async function uploadEventAsset(eventId, file) {
+export async function uploadEventAsset({ eventId, file }) {
     try {
         // Validate inputs
         if (!eventId) {
-            throw new Error('Event ID is required');
+            return { data: null, error: new Error('Event ID is required') };
         }
         if (!file) {
-            throw new Error('File is required');
+            return { data: null, error: new Error('File is required') };
+        }
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            return { 
+                data: null, 
+                error: new Error(`File size exceeds 5MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`) 
+            };
+        }
+
+        // Validate file type
+        if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+            return { 
+                data: null, 
+                error: new Error(`File type ${file.type} not allowed. Allowed types: images and PDF`) 
+            };
         }
 
         // Get current user
-        const { data: user, error: userError } = await getCurrentUser();
-        if (userError) throw userError;
-        if (!user) throw new Error('User must be authenticated to upload files');
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+            return { data: null, error: userError };
+        }
+        if (!user) {
+            return { data: null, error: new Error('User must be authenticated to upload files') };
+        }
 
-        // Generate safe file name
-        const timestamp = Date.now();
-        const safeName = file.name
-            .replace(/[^a-zA-Z0-9._-]/g, '_')
-            .substring(0, 100); // Limit length
-        const filePath = `events/${eventId}/${timestamp}-${safeName}`;
+        // Build storage path
+        const filePath = buildAssetPath(eventId, file.name);
 
         // Upload file to storage
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('event-assets')
             .upload(filePath, file, {
                 cacheControl: '3600',
-                upsert: false
+                upsert: false,
+                contentType: file.type
             });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            return { data: null, error: uploadError };
+        }
 
         // Insert record into event_assets table
-        const { data: assetRecord, error: insertError } = await supabase
+        const { data: asset, error: insertError } = await supabase
             .from('event_assets')
             .insert({
                 event_id: eventId,
-                file_path: filePath,
+                uploaded_by: user.id,
+                file_path: uploadData.path,
                 file_name: file.name,
                 mime_type: file.type,
-                file_size: file.size,
-                uploaded_by: user.id
+                file_size: file.size
             })
             .select()
             .single();
@@ -71,14 +134,20 @@ export async function uploadEventAsset(eventId, file) {
             // Cleanup: delete uploaded file if database insert fails
             await supabase.storage
                 .from('event-assets')
-                .remove([filePath]);
-            throw insertError;
+                .remove([uploadData.path]);
+            return { data: null, error: insertError };
+        }
+
+        // Get public URL for the uploaded file
+        const { data: url, error: urlError } = await getAssetUrl(uploadData.path);
+        if (urlError) {
+            console.warn('Failed to generate URL, but upload succeeded:', urlError);
         }
 
         return {
             data: {
-                filePath: uploadData.path,
-                assetRecord
+                asset,
+                url: url || null
             },
             error: null
         };
@@ -96,13 +165,14 @@ export async function uploadEventAsset(eventId, file) {
 export async function getEventAssets(eventId) {
     try {
         if (!eventId) {
-            throw new Error('Event ID is required');
+            return { data: null, error: new Error('Event ID is required') };
         }
 
         const { data, error } = await supabase
             .from('event_assets')
             .select(`
                 id,
+                event_id,
                 file_path,
                 file_name,
                 mime_type,
@@ -115,7 +185,9 @@ export async function getEventAssets(eventId) {
             .eq('event_id', eventId)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            return { data: null, error };
+        }
 
         return { data, error: null };
     } catch (error) {
@@ -126,13 +198,22 @@ export async function getEventAssets(eventId) {
 
 /**
  * Get public URL for an asset file
+ * 
+ * IMPORTANT: getPublicUrl() always returns a URL regardless of bucket privacy settings.
+ * If the bucket is PRIVATE, the returned URL will be valid but inaccessible (returns 403).
+ * 
+ * To verify the bucket is truly public:
+ * 1. Call this function to get the URL
+ * 2. Open the URL in an incognito/private browser tab
+ * 3. Check if the file loads without authentication
+ * 
  * @param {string} filePath - Path to file in storage (e.g., 'events/123/456-image.jpg')
  * @returns {Promise<{data: string|null, error: Error|null}>}
  */
 export async function getAssetUrl(filePath) {
     try {
         if (!filePath) {
-            throw new Error('File path is required');
+            return { data: null, error: new Error('File path is required') };
         }
 
         const { data } = supabase.storage
@@ -140,9 +221,9 @@ export async function getAssetUrl(filePath) {
             .getPublicUrl(filePath);
 
         // Note: getPublicUrl does not throw errors, it always returns a URL
-        // Verify the URL is valid
+        // The URL will be generated even if the bucket is private!
         if (!data?.publicUrl) {
-            throw new Error('Failed to generate public URL');
+            return { data: null, error: new Error('Failed to generate public URL') };
         }
 
         return { data: data.publicUrl, error: null };
@@ -154,43 +235,45 @@ export async function getAssetUrl(filePath) {
 
 /**
  * Delete an asset file and its database record
- * @param {string} assetId - UUID of the asset record
+ * @param {Object} asset - Asset object with id and file_path
+ * @param {string} asset.id - UUID of the asset record
+ * @param {string} asset.file_path - Storage path of the file
  * @returns {Promise<{data: {success: boolean}|null, error: Error|null}>}
  */
-export async function deleteEventAsset(assetId) {
+export async function deleteAsset(asset) {
     try {
-        if (!assetId) {
-            throw new Error('Asset ID is required');
+        if (!asset) {
+            return { data: null, error: new Error('Asset object is required') };
         }
-
-        // Get asset record to find file path
-        const { data: asset, error: fetchError } = await supabase
-            .from('event_assets')
-            .select('file_path')
-            .eq('id', assetId)
-            .single();
-
-        if (fetchError) throw fetchError;
-        if (!asset) throw new Error('Asset not found');
+        if (!asset.id) {
+            return { data: null, error: new Error('Asset ID is required') };
+        }
+        if (!asset.file_path) {
+            return { data: null, error: new Error('Asset file path is required') };
+        }
 
         // Delete file from storage
         const { error: storageError } = await supabase.storage
             .from('event-assets')
             .remove([asset.file_path]);
 
-        if (storageError) throw storageError;
+        if (storageError) {
+            return { data: null, error: storageError };
+        }
 
         // Delete database record
         const { error: deleteError } = await supabase
             .from('event_assets')
             .delete()
-            .eq('id', assetId);
+            .eq('id', asset.id);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+            return { data: null, error: deleteError };
+        }
 
         return { data: { success: true }, error: null };
     } catch (error) {
-        console.error('deleteEventAsset error:', error);
+        console.error('deleteAsset error:', error);
         return { data: null, error };
     }
 }
