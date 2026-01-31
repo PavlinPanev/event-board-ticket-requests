@@ -260,16 +260,6 @@ function renderEventDetails(event, user) {
                 <a href="/index.html" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Events
                 </a>
-                
-                <!-- Assets Section -->
-                <div class="card shadow-sm mt-4">
-                    <div class="card-body">
-                        <h5 class="card-title mb-3">Assets</h5>
-                        <div id="assets-container">
-                            <p class="text-muted">Loading assets...</p>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <div class="col-lg-4">
@@ -536,18 +526,41 @@ function renderAssets(assets, canManage = false) {
  * Load and display event assets
  */
 async function loadAssets() {
-    const container = document.getElementById('assets-container');
-    if (!container) return;
+    const section = document.getElementById('assets-section');
+    if (!section) return;
     
     try {
-        container.innerHTML = '<p class="text-muted small">Loading assets...</p>';
+        // Initial loading state with full card structure
+        section.innerHTML = `
+            <div class="row mt-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Assets</h5>
+                            <p class="text-muted">Loading assets...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
         
         // Fetch assets
         const { data: assets, error } = await getEventAssets(currentEventId);
         
         if (error) {
             console.error('Failed to load assets:', error);
-            container.innerHTML = '<p class="text-danger small">Failed to load assets</p>';
+            section.innerHTML = `
+                <div class="row mt-4">
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Assets</h5>
+                                <p class="text-danger small">Failed to load assets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
             return;
         }
         
@@ -562,8 +575,19 @@ async function loadAssets() {
         // Check if user can manage assets (owner or admin)
         const canManage = await canManageAssets(currentUser, currentEvent);
         
-        // Render assets
-        container.innerHTML = renderAssets(assetsWithUrls, canManage);
+        // Render assets in full card structure
+        section.innerHTML = `
+            <div class="row mt-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Assets</h5>
+                            ${renderAssets(assetsWithUrls, canManage)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
         
         // Attach event listeners
         if (canManage) {
@@ -572,7 +596,18 @@ async function loadAssets() {
         
     } catch (error) {
         console.error('Load assets error:', error);
-        container.innerHTML = '<p class="text-danger small">An error occurred</p>';
+        section.innerHTML = `
+            <div class="row mt-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Assets</h5>
+                            <p class="text-danger small">An error occurred</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 }
 
