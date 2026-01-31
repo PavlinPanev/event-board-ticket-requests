@@ -437,33 +437,53 @@ function renderAssets(assets, canManage = false) {
     // Upload form for authorized users
     if (canManage) {
         html += `
-            <form id="asset-upload-form" class="mb-4">
-                <div class="mb-3">
-                    <label for="asset-file" class="form-label">Upload Asset</label>
-                    <input 
-                        type="file" 
-                        class="form-control" 
-                        id="asset-file" 
-                        name="file"
-                        accept="image/*,.pdf"
-                        required
-                    >
-                    <div class="form-text">
-                        Max 5MB. Allowed types: images (JPG, PNG, GIF, WebP, SVG) and PDF
+            <div class="bg-light rounded p-3 mb-4">
+                <h6 class="mb-3"><i class="bi bi-cloud-upload text-primary"></i> Upload New Asset</h6>
+                <form id="asset-upload-form">
+                    <div class="row align-items-end g-2">
+                        <div class="col-md-8">
+                            <input 
+                                type="file" 
+                                class="form-control" 
+                                id="asset-file" 
+                                name="file"
+                                accept="image/*,.pdf"
+                                required
+                            >
+                            <div class="form-text">
+                                Max 5MB. Images (JPG, PNG, GIF, WebP, SVG) or PDF
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100" id="upload-btn">
+                                <i class="bi bi-upload"></i> Upload
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div id="upload-message"></div>
-                <button type="submit" class="btn btn-primary btn-sm" id="upload-btn">
-                    <i class="bi bi-upload"></i> Upload
-                </button>
-            </form>
-            <hr>
+                    <div id="upload-message" class="mt-2"></div>
+                </form>
+            </div>
         `;
     }
     
-    // Empty state
+    // Empty state - different message for viewers vs owners
     if (!assets || assets.length === 0) {
-        html += '<p class="text-muted small">No assets uploaded yet.</p>';
+        if (canManage) {
+            html += `
+                <div class="text-center py-4">
+                    <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-2 mb-0">No photos or files uploaded yet.</p>
+                    <p class="text-muted small">Use the upload form above to add event images.</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="text-center py-3">
+                    <i class="bi bi-camera text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted small mt-2 mb-0">No photos available for this event.</p>
+                </div>
+            `;
+        }
         return html;
     }
     
@@ -471,67 +491,95 @@ function renderAssets(assets, canManage = false) {
     const images = assets.filter(a => a.mime_type && a.mime_type.startsWith('image/'));
     const others = assets.filter(a => !a.mime_type || !a.mime_type.startsWith('image/'));
     
-    // Render images in grid
+    // Render images in enhanced gallery grid
     if (images.length > 0) {
-        html += '<div class="row g-2 mb-3">';
-        images.forEach(asset => {
+        html += `
+            <div class="mb-3">
+                <span class="text-muted small"><i class="bi bi-images"></i> ${images.length} photo${images.length > 1 ? 's' : ''}</span>
+            </div>
+        `;
+        
+        // Use larger grid for better visibility
+        html += '<div class="row g-3 mb-4">';
+        images.forEach((asset, index) => {
+            // First image is featured (larger)
+            const colClass = index === 0 && images.length > 1 ? 'col-12 col-md-6' : 'col-6 col-md-4 col-lg-3';
+            const imgHeight = index === 0 && images.length > 1 ? '250px' : '180px';
+            
             html += `
-                <div class="col-6 col-md-4" data-asset-id="${asset.id}">
-                    <div class="position-relative">
-                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer">
+                <div class="${colClass}" data-asset-id="${asset.id}">
+                    <div class="position-relative h-100">
+                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer" class="d-block h-100">
                             <img 
                                 src="${escapeHtml(asset.url || '')}" 
                                 alt="${escapeHtml(asset.file_name)}" 
-                                class="img-thumbnail w-100" 
-                                style="height: 120px; object-fit: cover; cursor: pointer;"
+                                class="img-fluid rounded shadow-sm w-100" 
+                                style="height: ${imgHeight}; object-fit: cover; cursor: pointer; transition: transform 0.2s;"
                                 loading="lazy"
+                                onmouseover="this.style.transform='scale(1.02)'"
+                                onmouseout="this.style.transform='scale(1)'"
                             >
                         </a>
                         ${canManage ? `
                             <button 
-                                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 delete-asset-btn" 
+                                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 delete-asset-btn shadow" 
                                 data-asset-id="${asset.id}"
                                 data-file-path="${escapeHtml(asset.file_path)}"
-                                style="padding: 2px 6px; font-size: 11px;"
+                                style="padding: 4px 8px; font-size: 12px;"
                                 title="Delete ${escapeHtml(asset.file_name)}"
                             >
                                 <i class="bi bi-trash"></i>
                             </button>
                         ` : ''}
+                        <div class="position-absolute bottom-0 start-0 end-0 p-2" 
+                             style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
+                            <small class="text-white text-truncate d-block" style="font-size: 11px;">
+                                ${escapeHtml(asset.file_name)}
+                            </small>
+                        </div>
                     </div>
-                    <small class="text-muted d-block mt-1" style="font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${escapeHtml(asset.file_name)}
-                    </small>
                 </div>
             `;
         });
         html += '</div>';
     }
     
-    // Render other files as list
+    // Render other files (PDFs, etc.) as list with better styling
     if (others.length > 0) {
-        html += '<div class="list-group list-group-flush">';
+        html += `
+            <div class="mb-2">
+                <span class="text-muted small"><i class="bi bi-file-earmark"></i> ${others.length} file${others.length > 1 ? 's' : ''}</span>
+            </div>
+        `;
+        html += '<div class="list-group">';
         others.forEach(asset => {
+            const fileSize = asset.file_size ? `${(asset.file_size / 1024).toFixed(1)} KB` : '';
             html += `
-                <div class="list-group-item d-flex justify-content-between align-items-center px-0" data-asset-id="${asset.id}">
+                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-asset-id="${asset.id}">
                     <div class="flex-grow-1">
-                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
-                            <i class="bi bi-file-earmark-pdf text-danger"></i>
-                            ${escapeHtml(asset.file_name)}
+                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" rel="noopener noreferrer" class="text-decoration-none d-flex align-items-center">
+                            <i class="bi bi-file-earmark-pdf text-danger fs-4 me-2"></i>
+                            <div>
+                                <span class="fw-medium">${escapeHtml(asset.file_name)}</span>
+                                ${fileSize ? `<small class="text-muted d-block">${fileSize}</small>` : ''}
+                            </div>
                         </a>
-                        <small class="text-muted d-block">
-                            ${(asset.file_size / 1024).toFixed(1)} KB
-                        </small>
                     </div>
-                    ${canManage ? `
-                        <button 
-                            class="btn btn-danger btn-sm delete-asset-btn" 
-                            data-asset-id="${asset.id}"
-                            data-file-path="${escapeHtml(asset.file_path)}"
-                        >
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    ` : ''}
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="${escapeHtml(asset.url || '#')}" target="_blank" class="btn btn-outline-primary btn-sm" title="Download">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        ${canManage ? `
+                            <button 
+                                class="btn btn-outline-danger btn-sm delete-asset-btn" 
+                                data-asset-id="${asset.id}"
+                                data-file-path="${escapeHtml(asset.file_path)}"
+                                title="Delete"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             `;
         });
@@ -555,8 +603,13 @@ async function loadAssets() {
                 <div class="col-lg-8">
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title mb-3">Assets</h5>
-                            <p class="text-muted">Loading assets...</p>
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-images text-primary"></i> Event Photos & Files
+                            </h5>
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                                <span class="text-muted ms-2">Loading gallery...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -584,7 +637,7 @@ async function loadAssets() {
                     <div class="col-lg-8">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                                <h5 class="card-title mb-3">Assets</h5>
+                                <h5 class="card-title mb-3"><i class="bi bi-images text-primary"></i> Event Photos & Files</h5>
                                 <p class="text-danger small">${escapeHtml(userMessage)}</p>
                                 ${errorMsg.includes('file_size') ? `
                                     <div class="alert alert-warning small">
@@ -617,7 +670,7 @@ async function loadAssets() {
                 <div class="col-lg-8">
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title mb-3">Assets</h5>
+                            <h5 class="card-title mb-3"><i class="bi bi-images text-primary"></i> Event Photos & Files</h5>
                             ${renderAssets(assetsWithUrls, canManage)}
                         </div>
                     </div>
@@ -637,7 +690,7 @@ async function loadAssets() {
                 <div class="col-lg-8">
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title mb-3">Assets</h5>
+                            <h5 class="card-title mb-3"><i class="bi bi-images text-primary"></i> Event Photos & Files</h5>
                             <p class="text-danger small">An error occurred</p>
                         </div>
                     </div>
