@@ -40,17 +40,21 @@ let currentEventId = null;
  */
 async function canManageAssets(user, event) {
     if (!user || !event) {
+        console.log('[canManageAssets] No user or event:', { user: !!user, event: !!event });
         return false;
     }
     
     // Check if user is admin
     const userIsAdmin = await isAdmin();
+    console.log('[canManageAssets] Is admin:', userIsAdmin);
     if (userIsAdmin) {
         return true;
     }
     
     // Check if user is event owner
-    return user.id === event.created_by;
+    const isOwner = user.id === event.created_by;
+    console.log('[canManageAssets] Is owner:', isOwner, { userId: user.id, createdBy: event.created_by });
+    return isOwner;
 }
 
 /**
@@ -413,6 +417,7 @@ async function handleTicketRequest(e, eventId) {
  * @returns {string} HTML string
  */
 function renderAssets(assets, canManage = false) {
+    console.log('[renderAssets] Called with:', { assetsCount: assets?.length, canManage });
     let html = '';
     
     // Upload form for authorized users
@@ -549,13 +554,30 @@ async function loadAssets() {
         
         if (error) {
             console.error('Failed to load assets:', error);
+            
+            // Check if it's a missing column error (file_size not migrated)
+            const errorMsg = error.message || '';
+            let userMessage = 'Failed to load assets';
+            
+            if (errorMsg.includes('column') && errorMsg.includes('file_size')) {
+                userMessage = 'Database migration required: file_size column missing. Run migration 005.';
+            } else if (errorMsg) {
+                userMessage = `Failed to load assets: ${errorMsg}`;
+            }
+            
             section.innerHTML = `
                 <div class="row mt-4">
                     <div class="col-lg-8">
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Assets</h5>
-                                <p class="text-danger small">Failed to load assets</p>
+                                <p class="text-danger small">${escapeHtml(userMessage)}</p>
+                                ${errorMsg.includes('file_size') ? `
+                                    <div class="alert alert-warning small">
+                                        <strong>Fix:</strong> Run this SQL in Supabase Dashboard:<br>
+                                        <code>ALTER TABLE event_assets ADD COLUMN IF NOT EXISTS file_size integer;</code>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -647,10 +669,10 @@ async function handleUpload(e) {
         messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">File uploaded successfully!<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
         form.reset();
         
-        // Debug helper
-        if (data && data.asset) {
-            await debugAssetUrl(data.asset.file_path, data.asset.file_name);
-        }
+        // Debug helper (disabled by default, uncomment for debugging)
+        // if (data && data.asset) {
+        //     await debugAssetUrl(data.asset.file_path, data.asset.file_name);
+        // }
         
         // Reload assets
         await loadAssets();

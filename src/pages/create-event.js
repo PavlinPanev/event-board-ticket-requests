@@ -79,14 +79,9 @@ function renderCreateEventForm(venues) {
                             </div>
                             
                             <div class="mb-4">
-                                <label for="status" class="form-label">Status</label>
-                                <select class="form-select" id="status" name="status">
-                                    <option value="draft" selected>Draft (not visible to public)</option>
-                                    <option value="published">Published (visible to public)</option>
-                                </select>
-                                <div class="form-text">
-                                    <strong>Note:</strong> Per security policy, events are created as 'draft' by default. 
-                                    You can publish after creation.
+                                <div class="alert alert-info">
+                                    <strong>Note:</strong> Events are created as <strong>draft</strong> by default per security policy. 
+                                    You can publish the event after creation by editing it.
                                 </div>
                             </div>
                             
@@ -148,7 +143,7 @@ async function handleSubmit(e) {
             description: formData.get('description').trim() || null,
             starts_at: formData.get('starts_at'),
             venue_id: formData.get('venue_id'),
-            status: formData.get('status') || 'draft'
+            status: 'draft'  // Always force draft per RLS policy
         };
         
         // Validate required fields
@@ -168,25 +163,13 @@ async function handleSubmit(e) {
         const { data: event, error } = await createEvent(eventData);
         
         if (error) {
-            // Check if it's the security policy error (status must be draft)
-            if (error.message && error.message.includes('draft')) {
-                showMessage('Events can only be created as draft. You can publish them after creation.', 'warning');
-                // Force status to draft and retry
-                eventData.status = 'draft';
-                const { data: retryEvent, error: retryError } = await createEvent(eventData);
-                if (retryError) {
-                    showMessage(`Failed to create event: ${retryError.message}`, 'danger');
-                    return;
-                }
-                // Success on retry
-                showMessage('Event created successfully! Redirecting...', 'success');
-                setTimeout(() => {
-                    window.location.href = `/event-details.html?id=${retryEvent.id}`;
-                }, 1500);
-                return;
+            // Check if it's an RLS policy violation
+            if (error.message && (error.message.includes('row-level security policy') || error.message.includes('policy'))) {
+                showMessage('Security policy violation. Please ensure you are logged in and try again.', 'danger');
+                console.error('RLS Policy Error:', error);
+            } else {
+                showMessage(`Failed to create event: ${error.message}`, 'danger');
             }
-            
-            showMessage(`Failed to create event: ${error.message}`, 'danger');
             return;
         }
         

@@ -177,10 +177,8 @@ export async function getEventAssets(eventId) {
                 file_name,
                 mime_type,
                 file_size,
-                created_at,
-                uploader:profiles!uploaded_by (
-                    display_name
-                )
+                uploaded_by,
+                created_at
             `)
             .eq('event_id', eventId)
             .order('created_at', { ascending: false });
