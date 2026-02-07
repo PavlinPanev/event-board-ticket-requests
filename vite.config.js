@@ -21,6 +21,7 @@ export default defineConfig({
             // Define all HTML entry points
             input: {
                 index: 'src/index.html',
+                calendar: 'src/calendar.html',
                 eventDetails: 'src/event-details.html',
                 createEvent: 'src/create-event.html',
                 editEvent: 'src/edit-event.html',

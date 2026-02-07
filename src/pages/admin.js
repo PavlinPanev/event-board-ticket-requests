@@ -47,30 +47,44 @@ async function init() {
  */
 function renderAdminLayout() {
     return `
-        <div class="py-4">
-            <h1 class="mb-4">Admin Dashboard</h1>
-            
+        <div class="admin-panel">
             <!-- Stats Cards Row -->
-            <div id="stats-container" class="row g-3 mb-5">
+            <div id="stats-container" class="admin-stats row g-4 mb-5">
                 <div class="col-12 text-center text-muted">Loading statistics...</div>
             </div>
             
             <!-- Pending Requests Section -->
-            <section class="mb-5">
-                <h2 class="h4 mb-3">
-                    <i class="bi bi-ticket-perforated me-2"></i>Pending Ticket Requests
-                </h2>
-                <div id="requests-container">
+            <section class="admin-section mb-5">
+                <div class="admin-section-header">
+                    <h2 class="admin-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="admin-section-icon">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Pending Ticket Requests
+                    </h2>
+                </div>
+                <div id="requests-container" class="admin-section-content">
                     <div class="text-center text-muted py-4">Loading requests...</div>
                 </div>
             </section>
             
             <!-- Events Moderation Section -->
-            <section class="mb-5">
-                <h2 class="h4 mb-3">
-                    <i class="bi bi-calendar-event me-2"></i>Events Moderation
-                </h2>
-                <div id="events-container">
+            <section class="admin-section mb-5">
+                <div class="admin-section-header">
+                    <h2 class="admin-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="admin-section-icon">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Events Moderation
+                    </h2>
+                </div>
+                <div id="events-container" class="admin-section-content">
                     <div class="text-center text-muted py-4">Loading events...</div>
                 </div>
             </section>
@@ -97,35 +111,27 @@ async function loadStats() {
     
     container.innerHTML = `
         <div class="col-sm-6 col-lg-3">
-            <div class="card text-bg-warning h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Pending Requests</h5>
-                    <p class="card-text display-4">${data.pendingRequests}</p>
-                </div>
+            <div class="stat-card stat-card-warning">
+                <div class="stat-card-label">Pending Requests</div>
+                <div class="stat-card-value">${data.pendingRequests}</div>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <div class="card text-bg-info h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Requests</h5>
-                    <p class="card-text display-4">${data.totalRequests}</p>
-                </div>
+            <div class="stat-card stat-card-info">
+                <div class="stat-card-label">Total Requests</div>
+                <div class="stat-card-value">${data.totalRequests}</div>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <div class="card text-bg-success h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Upcoming Events</h5>
-                    <p class="card-text display-4">${data.upcomingEvents}</p>
-                </div>
+            <div class="stat-card stat-card-success">
+                <div class="stat-card-label">Upcoming Events</div>
+                <div class="stat-card-value">${data.upcomingEvents}</div>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <div class="card text-bg-secondary h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Events</h5>
-                    <p class="card-text display-4">${data.totalEvents}</p>
-                </div>
+            <div class="stat-card stat-card-secondary">
+                <div class="stat-card-label">Total Events</div>
+                <div class="stat-card-value">${data.totalEvents}</div>
             </div>
         </div>
     `;
@@ -156,9 +162,9 @@ async function loadPendingRequests() {
     }
     
     container.innerHTML = `
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
                     <tr>
                         <th>Event</th>
                         <th>Event Date</th>
@@ -190,22 +196,26 @@ function renderRequestRow(request) {
     return `
         <tr data-request-id="${request.id}">
             <td>
-                <a href="event-details.html?id=${request.event?.id}" class="text-decoration-none">
+                <a href="event-details.html?id=${request.event?.id}" class="admin-table-link">
                     ${escapeHtml(eventTitle)}
                 </a>
             </td>
-            <td><small>${eventDate}</small></td>
+            <td class="admin-table-secondary">${eventDate}</td>
             <td>${escapeHtml(requesterName)}</td>
-            <td><span class="badge bg-secondary">${request.quantity}</span></td>
-            <td><small>${note}</small></td>
-            <td><small class="text-muted">${requestedAt}</small></td>
+            <td><span class="admin-badge admin-badge-neutral">${request.quantity}</span></td>
+            <td class="admin-table-secondary">${note}</td>
+            <td class="admin-table-muted">${requestedAt}</td>
             <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-success btn-approve-request" data-request-id="${request.id}" title="Approve">
-                        <i class="bi bi-check-lg"></i> Approve
+                <div class="admin-actions">
+                    <button class="admin-btn admin-btn-success btn-approve-request" data-request-id="${request.id}" title="Approve">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+                        </svg>
                     </button>
-                    <button class="btn btn-danger btn-reject-request" data-request-id="${request.id}" title="Reject">
-                        <i class="bi bi-x-lg"></i> Reject
+                    <button class="admin-btn admin-btn-danger btn-reject-request" data-request-id="${request.id}" title="Reject">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                        </svg>
                     </button>
                 </div>
             </td>
@@ -238,9 +248,9 @@ async function loadEventsModeration() {
     }
     
     container.innerHTML = `
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
                     <tr>
                         <th>Title</th>
                         <th>Date</th>
@@ -268,57 +278,68 @@ function renderEventRow(event) {
     
     // Status badge colors
     const statusBadges = {
-        draft: 'bg-secondary',
-        published: 'bg-success',
-        archived: 'bg-dark'
+        draft: 'admin-badge-neutral',
+        published: 'admin-badge-success',
+        archived: 'admin-badge-dark'
     };
-    const badgeClass = statusBadges[event.status] || 'bg-secondary';
+    const badgeClass = statusBadges[event.status] || 'admin-badge-neutral';
     
     // Action buttons based on current status
     let actionButtons = '';
     
     if (event.status === 'draft') {
         actionButtons = `
-            <button class="btn btn-success btn-sm btn-publish-event" data-event-id="${event.id}" title="Publish">
-                <i class="bi bi-globe"></i> Publish
+            <button class="admin-btn admin-btn-success btn-publish-event" data-event-id="${event.id}" title="Publish">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5z"/>
+                </svg>
             </button>
         `;
     } else if (event.status === 'published') {
         actionButtons = `
-            <button class="btn btn-warning btn-sm btn-archive-event" data-event-id="${event.id}" title="Archive">
-                <i class="bi bi-archive"></i> Archive
+            <button class="admin-btn admin-btn-warning btn-archive-event" data-event-id="${event.id}" title="Archive">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M0 2a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 1 12.5V5a1 1 0 0 1-1-1V2zm2 3v7.5A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V5H2zm13-3H1v2h14V2zM5 7.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+                </svg>
             </button>
         `;
     } else if (event.status === 'archived') {
         actionButtons = `
-            <button class="btn btn-outline-success btn-sm btn-publish-event" data-event-id="${event.id}" title="Republish">
-                <i class="bi bi-globe"></i> Republish
+            <button class="admin-btn admin-btn-success btn-publish-event" data-event-id="${event.id}" title="Republish">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5z"/>
+                </svg>
             </button>
         `;
     }
     
     actionButtons += `
-        <a href="edit-event.html?id=${event.id}" class="btn btn-outline-primary btn-sm" title="Edit">
-            <i class="bi bi-pencil"></i>
+        <a href="edit-event.html?id=${event.id}" class="admin-btn admin-btn-primary" title="Edit">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+            </svg>
         </a>
-        <button class="btn btn-outline-danger btn-sm btn-delete-event" data-event-id="${event.id}" title="Delete">
-            <i class="bi bi-trash"></i>
+        <button class="admin-btn admin-btn-danger btn-delete-event" data-event-id="${event.id}" title="Delete">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+            </svg>
         </button>
     `;
     
     return `
         <tr data-event-id="${event.id}">
             <td>
-                <a href="event-details.html?id=${event.id}" class="text-decoration-none">
+                <a href="event-details.html?id=${event.id}" class="admin-table-link">
                     ${escapeHtml(event.title)}
                 </a>
             </td>
-            <td><small>${eventDate}</small></td>
-            <td>${escapeHtml(venueName)}</td>
-            <td>${escapeHtml(creatorName)}</td>
-            <td><span class="badge ${badgeClass}">${event.status}</span></td>
+            <td class="admin-table-secondary">${eventDate}</td>
+            <td class="admin-table-secondary">${escapeHtml(venueName)}</td>
+            <td class="admin-table-secondary">${escapeHtml(creatorName)}</td>
+            <td><span class="admin-badge ${badgeClass}">${event.status}</span></td>
             <td>
-                <div class="btn-group btn-group-sm">
+                <div class="admin-actions">
                     ${actionButtons}
                 </div>
             </td>

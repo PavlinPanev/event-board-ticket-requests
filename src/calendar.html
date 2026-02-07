@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Calendar - Event Board</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/styles/index.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav id="navbar-container"></nav>
+    
+    <!-- Main Content -->
+    <main>
+        <div class="container mt-4 mb-5">
+            <!-- Header with Year Selector -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-6">Event Calendar</h1>
+                <div class="d-flex align-items-center gap-3">
+                    <label for="year-selector" class="form-label mb-0">Year:</label>
+                    <select id="year-selector" class="form-select" style="width: auto;">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div id="calendar-legend" class="mb-4">
+                <!-- Populated by JS with venue colors -->
+            </div>
+            
+            <!-- Loading State -->
+            <div id="calendar-loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-3">Loading calendar...</p>
+            </div>
+            
+            <!-- Calendar Grid Container -->
+            <div id="calendar-root" class="calendar-container" style="display: none;">
+                <!-- Populated by JS with 12 month grids -->
+            </div>
+            
+            <!-- Error State -->
+            <div id="calendar-error" class="alert alert-danger" style="display: none;">
+                <!-- Error message populated by JS -->
+            </div>
+        </div>
+    </main>
+    
+    <!-- Tooltip Container -->
+    <div id="event-tooltip" class="event-tooltip" style="display: none;">
+        <div class="event-tooltip-content">
+            <!-- Populated dynamically on hover -->
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Page Script -->
+    <script type="module" src="/pages/calendar.js"></script>
+</body>
+</html>
