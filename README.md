@@ -223,6 +223,21 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for detai
 
 ## 🧪 Testing & Evaluation
 
+### Demo Credentials (For Evaluation)
+
+Use this pre-configured admin account to test the application:
+
+- **Email**: `xalegi9025-admin@maildrop.cc`
+- **Password**: `Test123!`
+
+This account has **admin privileges** and allows you to:
+- Access the Admin Panel
+- Approve/reject ticket requests
+- Manage all events (edit, delete, publish)
+- View all user data
+
+**Alternative**: Register with any email and use the Role Toggle feature (see below).
+
 ### Role Toggle Feature (For Examiners)
 
 The application includes a **built-in role toggle** for easy testing of admin vs. user permissions:
