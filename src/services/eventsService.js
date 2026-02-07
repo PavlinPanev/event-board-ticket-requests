@@ -46,6 +46,37 @@ export async function getPublishedEvents(filters = {}) {
 }
 
 /**
+ * Get published events within a date range (for calendar view)
+ * @param {string} startISO - Start date in ISO format
+ * @param {string} endISO - End date in ISO format
+ * @returns {Promise<{data: Array|null, error: Error|null}>}
+ */
+export async function getPublishedEventsForRange(startISO, endISO) {
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .select(`
+                *,
+                venue:venues(id, name, address, capacity)
+            `)
+            .eq('status', 'published')
+            .gte('starts_at', startISO)
+            .lt('starts_at', endISO)
+            .order('starts_at', { ascending: true });
+        
+        if (error) {
+            console.error('Error fetching events for date range:', error);
+            return { data: null, error };
+        }
+        
+        return { data: data || [], error: null };
+    } catch (error) {
+        console.error('Unexpected error in getPublishedEventsForRange:', error);
+        throw error;
+    }
+}
+
+/**
  * Get event by ID with venue information
  * @param {string} id - Event UUID
  * @returns {Promise<{data: Object|null, error: Error|null}>}

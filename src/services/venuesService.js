@@ -23,6 +23,9 @@ export async function getVenues() {
     }
 }
 
+// Alias for calendar page
+export { getVenues as getAllVenues };
+
 /**
  * Get venue by ID
  * @param {string} id - Venue UUID

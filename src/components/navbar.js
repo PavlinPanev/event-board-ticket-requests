@@ -52,6 +52,11 @@ function createNavbarMarkup(currentPage, user = null) {
                                 Events
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link ${currentPage === 'calendar' ? 'active' : ''}" href="/calendar.html">
+                                Calendar
+                            </a>
+                        </li>
                         
                         ${user ? `
                             <li class="nav-item">
