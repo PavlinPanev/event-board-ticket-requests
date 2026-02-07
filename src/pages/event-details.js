@@ -232,6 +232,9 @@ function renderEventDetails(event, user, canEdit = false) {
     const venue = event.venue || {};
     
     return `
+        <!-- Hero Image Section - Will be populated by loadAssets -->
+        <div id="event-hero-section"></div>
+        
         <div class="row">
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-4">
@@ -422,6 +425,51 @@ async function handleTicketRequest(e, eventId) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="bi bi-ticket"></i> Submit Request';
     }
+}
+
+/**
+ * Render hero section with featured images
+ * @param {Array} images - Array of image assets
+ * @returns {string} HTML string
+ */
+function renderHeroSection(images) {
+    if (!images || images.length === 0) {
+        return '';
+    }
+    
+    // Show first image as large hero, rest as thumbnails
+    const featuredImage = images[0];
+    const thumbnails = images.slice(1, 5); // Show up to 4 more thumbnails
+    
+    return `
+        <div class="event-hero mb-4">
+            <div class="event-hero-main">
+                <img 
+                    src="${escapeHtml(featuredImage.url)}" 
+                    alt="${escapeHtml(featuredImage.file_name)}" 
+                    class="event-hero-image"
+                >
+            </div>
+            ${thumbnails.length > 0 ? `
+                <div class="event-hero-thumbnails">
+                    ${thumbnails.map(img => `
+                        <div class="event-hero-thumb">
+                            <img 
+                                src="${escapeHtml(img.url)}" 
+                                alt="${escapeHtml(img.file_name)}"
+                                class="event-hero-thumb-img"
+                            >
+                        </div>
+                    `).join('')}
+                    ${images.length > 5 ? `
+                        <div class="event-hero-thumb event-hero-thumb-more">
+                            <span>+${images.length - 5}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+        </div>
+    `;
 }
 
 /**
@@ -663,6 +711,15 @@ async function loadAssets() {
         
         // Check if user can manage assets (owner or admin)
         const canManage = await canManageAssets(currentUser, currentEvent);
+        
+        // Separate images from other files
+        const images = assetsWithUrls.filter(a => a.mime_type && a.mime_type.startsWith('image/'));
+        
+        // Render hero section at the top of the page
+        const heroSection = document.getElementById('event-hero-section');
+        if (heroSection && images.length > 0) {
+            heroSection.innerHTML = renderHeroSection(images);
+        }
         
         // Render assets in full card structure
         section.innerHTML = `

@@ -883,6 +883,37 @@ textarea.form-control {
     overflow: hidden;
     transition: all var(--transition-base);
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.event-card-image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: var(--color-bg-secondary);
+}
+
+.event-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.event-card:hover .event-card-img {
+    transform: scale(1.05);
+}
+
+.event-card-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+    pointer-events: none;
 }
 
 .event-card::before {
@@ -991,6 +1022,92 @@ textarea.form-control {
 
 .event-card:hover .event-card-arrow {
     transform: translateX(4px);
+}
+
+/* Event Hero Section (Event Details) */
+.event-hero {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.event-hero-main {
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    background: var(--color-bg-secondary);
+}
+
+.event-hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.event-hero-thumbnails {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border-light);
+}
+
+.event-hero-thumb {
+    width: 80px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.event-hero-thumb:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.event-hero-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.event-hero-thumb-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Responsive Hero Section */
+@media (max-width: 768px) {
+    .event-hero-main {
+        height: 300px;
+    }
+    
+    .event-hero-thumb {
+        width: 60px;
+        height: 45px;
+    }
+}
+
+@media (max-width: 576px) {
+    .event-hero-main {
+        height: 250px;
+    }
+    
+    .event-hero-thumbnails {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* Empty State */

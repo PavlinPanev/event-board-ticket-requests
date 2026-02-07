@@ -2,7 +2,7 @@ import { escapeHtml, truncate, formatDateTime } from '../utils/helpers.js';
 
 /**
  * Render event card as HTML string
- * @param {Object} event - Event object with venue information
+ * @param {Object} event - Event object with venue information and optional thumbnail
  * @returns {string} Bootstrap card HTML
  */
 export function renderEventCard(event) {
@@ -10,10 +10,24 @@ export function renderEventCard(event) {
     const venueName = venue.name || 'TBA';
     const venueAddress = venue.address ? `, ${venue.address}` : '';
     
+    // Check if event has a thumbnail image
+    const hasThumbnail = event.thumbnail_url;
+    
     return `
         <div class="col-md-6 col-lg-4 mb-4">
             <a href="/event-details.html?id=${event.id}" class="event-card-link">
                 <article class="event-card">
+                    ${hasThumbnail ? `
+                        <div class="event-card-image">
+                            <img 
+                                src="${escapeHtml(event.thumbnail_url)}" 
+                                alt="${escapeHtml(event.title)}" 
+                                class="event-card-img"
+                                loading="lazy"
+                            >
+                            <div class="event-card-image-overlay"></div>
+                        </div>
+                    ` : ''}
                     <div class="event-card-content">
                         <h3 class="event-card-title">${escapeHtml(event.title)}</h3>
                         

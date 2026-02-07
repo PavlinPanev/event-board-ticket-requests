@@ -2,9 +2,53 @@ import { renderNavbar } from '../components/navbar.js';
 import { getPublishedEvents } from '../services/eventsService.js';
 import { renderEventCards } from '../components/eventCard.js';
 import { escapeHtml } from '../utils/helpers.js';
+import { getEventAssets, getAssetUrl } from '../services/storageService.js';
 
 // Store all events for client-side filtering
 let allEvents = [];
+
+/**
+ * Enrich events with thumbnail URLs from their first image asset
+ * @param {Array} events - Array of events
+ * @returns {Promise<Array>} Events with thumbnail_url property
+ */
+async function enrichEventsWithThumbnails(events) {
+    if (!events || events.length === 0) {
+        return events;
+    }
+    
+    try {
+        // Fetch thumbnails for all events in parallel
+        const enrichedEvents = await Promise.all(
+            events.map(async (event) => {
+                try {
+                    // Get first image asset for this event
+                    const { data: assets } = await getEventAssets(event.id);
+                    
+                    if (assets && assets.length > 0) {
+                        // Find first image asset
+                        const firstImage = assets.find(a => a.mime_type && a.mime_type.startsWith('image/'));
+                        
+                        if (firstImage) {
+                            // Get public URL for the image
+                            const { data: url } = await getAssetUrl(firstImage.file_path);
+                            return { ...event, thumbnail_url: url };
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Failed to fetch thumbnail for event ${event.id}:`, error);
+                }
+                
+                return event;
+            })
+        );
+        
+        return enrichedEvents;
+    } catch (error) {
+        console.error('Failed to enrich events with thumbnails:', error);
+        return events; // Return events without thumbnails on error
+    }
+}
 
 /**
  * Filter events by search query
@@ -129,11 +173,14 @@ async function init() {
             return;
         }
         
+        // Enrich events with thumbnail URLs
+        const eventsWithThumbnails = await enrichEventsWithThumbnails(events);
+        
         // Store events for filtering
-        allEvents = events;
+        allEvents = eventsWithThumbnails;
         
         // Render events with search
-        renderEventsPage(events, contentArea);
+        renderEventsPage(eventsWithThumbnails, contentArea);
         
     } catch (error) {
         console.error('Page initialization failed:', error);
