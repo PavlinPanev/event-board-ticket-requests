@@ -29,10 +29,16 @@ export async function renderNavbar(currentPage = '') {
  */
 function createNavbarMarkup(currentPage, user = null) {
     return `
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <nav class="navbar navbar-expand-lg">
             <div class="container-fluid">
                 <a class="navbar-brand" href="/index.html">
-                    📋 Event Board
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="navbar-logo-icon">
+                        <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+                        <rect x="3" y="13" width="7" height="7" rx="1" fill="currentColor"/>
+                        <rect x="13" y="3" width="7" height="7" rx="1" fill="currentColor"/>
+                        <rect x="13" y="13" width="7" height="7" rx="1" fill="currentColor"/>
+                    </svg>
+                    <span class="navbar-brand-text">Event Board</span>
                 </a>
                 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,8 +70,12 @@ function createNavbarMarkup(currentPage, user = null) {
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    👤 Account
+                                <a class="nav-link dropdown-toggle nav-account" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-account-icon">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    <span class="nav-account-text">Account</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="authDropdown">
                                     <li><h6 class="dropdown-header">${user.email}</h6></li>
@@ -90,8 +100,8 @@ function createNavbarMarkup(currentPage, user = null) {
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link ${currentPage === 'register' ? 'active' : ''}" href="/register.html">
-                                    Register
+                                <a class="btn btn-primary btn-sm nav-cta" href="/register.html">
+                                    Get Started
                                 </a>
                             </li>
                         `}

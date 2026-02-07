@@ -12,23 +12,40 @@ export function renderEventCard(event) {
     
     return `
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">${escapeHtml(event.title)}</h5>
-                    <p class="card-text text-muted small mb-2">
-                        <i class="bi bi-calendar-event"></i> ${formatDateTime(event.starts_at)}
-                    </p>
-                    <p class="card-text text-muted small mb-3">
-                        <i class="bi bi-geo-alt"></i> ${escapeHtml(venueName)}${escapeHtml(venueAddress)}
-                    </p>
-                    ${event.description ? `<p class="card-text">${escapeHtml(truncate(event.description, 100))}</p>` : ''}
-                </div>
-                <div class="card-footer bg-white border-top-0">
-                    <a href="/event-details.html?id=${event.id}" class="btn btn-primary btn-sm w-100">
-                        View Details
-                    </a>
-                </div>
-            </div>
+            <a href="/event-details.html?id=${event.id}" class="event-card-link">
+                <article class="event-card">
+                    <div class="event-card-content">
+                        <h3 class="event-card-title">${escapeHtml(event.title)}</h3>
+                        
+                        <div class="event-card-meta">
+                            <span class="event-card-meta-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="event-card-icon">
+                                    <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/>
+                                    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                </svg>
+                                ${formatDateTime(event.starts_at)}
+                            </span>
+                            <span class="event-card-meta-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="event-card-icon">
+                                    <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                                </svg>
+                                ${escapeHtml(venueName)}${escapeHtml(venueAddress)}
+                            </span>
+                        </div>
+                        
+                        ${event.description ? `
+                            <p class="event-card-description">${escapeHtml(truncate(event.description, 100))}</p>
+                        ` : ''}
+                        
+                        <div class="event-card-action">
+                            <span class="event-card-link-text">View Details</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="event-card-arrow">
+                                <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </article>
+            </a>
         </div>
     `;
 }
