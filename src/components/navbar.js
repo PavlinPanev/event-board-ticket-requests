@@ -17,7 +17,23 @@ export async function renderNavbar(currentPage = '') {
     // Get current session
     const { user } = await getSession();
     
-    navbarContainer.innerHTML = createNavbarMarkup(currentPage, user);
+    // Get user role if logged in
+    let userRole = null;
+    if (user) {
+        try {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+            userRole = profile?.role || 'user';
+        } catch (error) {
+            console.error('Error fetching user role:', error);
+            userRole = 'user';
+        }
+    }
+    
+    navbarContainer.innerHTML = createNavbarMarkup(currentPage, user, userRole);
     attachNavbarEventListeners();
 }
 
@@ -25,9 +41,10 @@ export async function renderNavbar(currentPage = '') {
  * Create navbar HTML markup
  * @param {string} currentPage - Current page identifier for active link highlighting
  * @param {Object|null} user - Current authenticated user or null
+ * @param {string|null} userRole - User role ('admin' or 'user')
  * @returns {string} HTML string
  */
-function createNavbarMarkup(currentPage, user = null) {
+function createNavbarMarkup(currentPage, user = null, userRole = null) {
     return `
         <nav class="navbar navbar-expand-lg">
             <div class="container-fluid">
@@ -69,11 +86,13 @@ function createNavbarMarkup(currentPage, user = null) {
                                     My Requests
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link ${currentPage === 'admin' ? 'active' : ''}" href="/admin.html">
-                                    Admin
-                                </a>
-                            </li>
+                            ${userRole === 'admin' ? `
+                                <li class="nav-item">
+                                    <a class="nav-link ${currentPage === 'admin' ? 'active' : ''}" href="/admin.html">
+                                        Admin
+                                    </a>
+                                </li>
+                            ` : ''}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle nav-account" href="#" id="authDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-account-icon">
