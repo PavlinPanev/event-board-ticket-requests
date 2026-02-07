@@ -46,6 +46,18 @@ async function init() {
         // Setup tooltip element
         tooltip = document.getElementById('event-tooltip');
         
+        // Attach tooltip hover listeners to keep it open
+        if (tooltip) {
+            tooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+            });
+            tooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    hideTooltip();
+                }, 200);
+            });
+        }
+        
         // Attach year change listener
         document.getElementById('year-selector').addEventListener('change', handleYearChange);
         
@@ -119,8 +131,8 @@ async function loadAndRenderCalendar(year) {
         // Build venue color map
         buildVenueColorMap(venues);
         
-        // Load venue selections from localStorage
-        loadVenueSelections(venues);
+        // Load venue selections from localStorage (defaults to venues with events)
+        loadVenueSelections(venues, events);
         
         // Build events map by date
         buildEventsMap(events);
@@ -153,22 +165,50 @@ function buildVenueColorMap(venues) {
 /**
  * Load venue selections from localStorage
  */
-function loadVenueSelections(venues) {
+function loadVenueSelections(venues, events) {
     selectedVenues.clear();
+    
+    // First, determine which venues have events in this period
+    const venuesWithEvents = new Set();
+    events.forEach(event => {
+        if (event.venue_id) {
+            venuesWithEvents.add(event.venue_id);
+        }
+    });
     
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
+            // Load saved selections but only include venues that have events in this period
             const savedIds = JSON.parse(stored);
-            savedIds.forEach(id => selectedVenues.add(id));
+            savedIds.forEach(id => {
+                // Only add if this venue has events in the current period
+                if (venuesWithEvents.has(id)) {
+                    selectedVenues.add(id);
+                }
+            });
+            
+            // If no saved venues have events in this period, select all venues with events
+            if (selectedVenues.size === 0 && venuesWithEvents.size > 0) {
+                venuesWithEvents.forEach(id => selectedVenues.add(id));
+            }
         } else {
-            // Default: all venues selected
-            venues.forEach(venue => selectedVenues.add(venue.id));
+            // Default: only select venues that have events in this period
+            if (venuesWithEvents.size === 0) {
+                // If no events have venues, select all venues
+                venues.forEach(venue => selectedVenues.add(venue.id));
+            } else {
+                venuesWithEvents.forEach(id => selectedVenues.add(id));
+            }
         }
     } catch (error) {
         console.error('Error loading venue selections:', error);
-        // Default: all venues selected
-        venues.forEach(venue => selectedVenues.add(venue.id));
+        // Fallback: select venues with events
+        if (venuesWithEvents.size === 0) {
+            venues.forEach(venue => selectedVenues.add(venue.id));
+        } else {
+            venuesWithEvents.forEach(id => selectedVenues.add(id));
+        }
     }
 }
 
@@ -241,9 +281,17 @@ function renderLegend(venues) {
         `;
     }).join('');
     
+    const allSelected = selectedVenues.size === venues.length;
+    const toggleButtonText = allSelected ? 'Unselect All' : 'Select All';
+    
     legendContainer.innerHTML = `
         <div class="legend-container">
-            <strong class="legend-title">Venues:</strong>
+            <div class="legend-header">
+                <strong class="legend-title">Venues:</strong>
+                <button id="toggle-all-venues" class="btn btn-sm btn-outline-secondary legend-toggle-btn">
+                    ${toggleButtonText}
+                </button>
+            </div>
             <div class="legend-items">
                 ${legendItems}
             </div>
@@ -263,6 +311,35 @@ function attachLegendListeners() {
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', handleVenueToggle);
     });
+    
+    // Toggle all button
+    const toggleAllBtn = document.getElementById('toggle-all-venues');
+    if (toggleAllBtn) {
+        toggleAllBtn.addEventListener('click', handleToggleAll);
+    }
+}
+
+/**
+ * Handle toggle all/none venues
+ */
+function handleToggleAll() {
+    const allSelected = selectedVenues.size === allVenues.length;
+    
+    if (allSelected) {
+        // Unselect all
+        selectedVenues.clear();
+    } else {
+        // Select all
+        selectedVenues.clear();
+        allVenues.forEach(venue => selectedVenues.add(venue.id));
+    }
+    
+    // Save to localStorage
+    saveVenueSelections();
+    
+    // Re-render legend and calendar
+    renderLegend(allVenues);
+    renderCalendar(currentYear);
 }
 
 /**
@@ -447,7 +524,7 @@ function handleDayHover(event) {
 function handleDayLeave() {
     tooltipTimeout = setTimeout(() => {
         hideTooltip();
-    }, 150);
+    }, 300);
 }
 
 /**

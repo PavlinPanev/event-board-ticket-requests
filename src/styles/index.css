@@ -1429,13 +1429,19 @@ textarea.form-control {
 /* Legend */
 .legend-container {
     display: flex;
-    align-items: center;
-    gap: var(--space-lg);
+    flex-direction: column;
+    gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    flex-wrap: wrap;
+}
+
+.legend-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
 }
 
 .legend-title {
@@ -1443,6 +1449,12 @@ textarea.form-control {
     font-size: 0.875rem;
     font-weight: var(--font-weight-medium);
     margin: 0;
+}
+
+.legend-toggle-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
 }
 
 .legend-items {
@@ -1493,29 +1505,29 @@ textarea.form-control {
 .month-container {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
+    border-radius: var(--radius-sm);
+    padding: 8px;
     transition: box-shadow var(--transition-base);
 }
 
 .month-container:hover {
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .month-title {
-    font-size: 1.125rem;
+    font-size: 0.8125rem;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
-    margin: 0 0 var(--space-md) 0;
-    padding-bottom: var(--space-sm);
-    border-bottom: 2px solid var(--color-border);
+    margin: 0 0 6px 0;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 /* Calendar Grid */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
+    gap: 1px;
     background: var(--color-border-light);
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -1524,13 +1536,13 @@ textarea.form-control {
 /* Weekday Headers */
 .calendar-weekday {
     background: var(--color-bg-secondary);
-    padding: var(--space-xs);
+    padding: 2px;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.5625rem;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
 }
 
 /* Day Cells */
@@ -1542,9 +1554,9 @@ textarea.form-control {
     align-items: center;
     justify-content: center;
     position: relative;
-    min-height: 50px;
+    min-height: 30px;
     border: none;
-    padding: var(--space-xs);
+    padding: 2px;
     transition: all var(--transition-fast);
 }
 
@@ -1554,7 +1566,7 @@ textarea.form-control {
 }
 
 .calendar-day-number {
-    font-size: 0.875rem;
+    font-size: 0.6875rem;
     font-weight: var(--font-weight-medium);
     color: var(--color-text-primary);
     z-index: 1;
@@ -1563,76 +1575,88 @@ textarea.form-control {
 /* Day with Events */
 .calendar-day-with-events {
     cursor: pointer;
-    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%);
+    background: var(--color-primary-light);
+    border: 2px solid var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.calendar-day-with-events .calendar-day-number {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
 }
 
 .calendar-day-with-events:hover {
-    background: var(--color-primary-light);
-    box-shadow: inset 0 0 0 2px var(--color-primary);
-    transform: scale(1.05);
+    background: var(--color-primary);
+    transform: scale(1.08);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+}
+
+.calendar-day-with-events:hover .calendar-day-number {
+    color: white;
 }
 
 .calendar-day-with-events:focus {
     outline: 2px solid var(--color-primary);
-    outline-offset: -2px;
+    outline-offset: 2px;
     background: var(--color-primary-light);
 }
 
 .calendar-day-with-events:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
 }
 
 /* Event Indicators */
 .event-indicators {
     display: flex;
-    gap: 2px;
-    margin-top: var(--space-xs);
+    gap: 1px;
+    margin-top: 1px;
     align-items: center;
 }
 
 .event-indicator {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .event-overflow {
-    font-size: 0.625rem;
+    font-size: 0.5rem;
     color: var(--color-text-secondary);
     font-weight: var(--font-weight-semibold);
-    margin-left: 2px;
+    margin-left: 1px;
 }
 
 /* Event Tooltip */
 .event-tooltip {
     position: fixed;
     z-index: 9999;
-    max-width: 320px;
-    min-width: 280px;
+    max-width: 400px;
+    min-width: 320px;
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border: 2px solid var(--color-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    padding: var(--space-md);
-    pointer-events: none;
+    padding: var(--space-lg);
+    pointer-events: auto;
 }
 
 .event-tooltip-content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-lg);
 }
 
 .tooltip-event {
-    padding: var(--space-sm);
-    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
     background: var(--color-bg-secondary);
     transition: background var(--transition-fast);
 }
 
 .tooltip-event:hover {
-    background: var(--color-border-light);
+    background: var(--color-primary-light);
 }
 
 .tooltip-event-header {
@@ -1650,29 +1674,34 @@ textarea.form-control {
 }
 
 .tooltip-event-header strong {
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
     line-height: var(--line-height-tight);
 }
 
 .tooltip-event-details {
-    margin-bottom: var(--space-xs);
+    margin-bottom: var(--space-sm);
 }
 
 .tooltip-event-link {
     display: inline-block;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: var(--color-primary);
     text-decoration: none;
-    font-weight: var(--font-weight-medium);
-    transition: color var(--transition-fast);
+    font-weight: var(--font-weight-semibold);
+    padding: 6px 12px;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
     pointer-events: all;
 }
 
 .tooltip-event-link:hover {
-    color: var(--color-primary-hover);
-    text-decoration: underline;
+    background: var(--color-primary);
+    color: white;
+    text-decoration: none;
+    transform: translateX(2px);
 }
 
 .tooltip-more {
