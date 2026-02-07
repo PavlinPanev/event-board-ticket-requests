@@ -22,8 +22,12 @@ const VENUE_COLORS = [
 let currentYear = new Date().getFullYear();
 let venueColorMap = new Map(); // venueId -> color
 let eventsMap = new Map(); // 'YYYY-MM-DD' -> [events]
+let selectedVenues = new Set(); // Set of selected venue IDs
+let allVenues = []; // Store all venues for filtering
 let tooltip = null;
 let tooltipTimeout = null;
+
+const STORAGE_KEY = 'calendar_selected_venues';
 
 /**
  * Page initialization
@@ -109,8 +113,14 @@ async function loadAndRenderCalendar(year) {
         const venues = venuesResult.data || [];
         const events = eventsResult.data || [];
         
+        // Store venues globally
+        allVenues = venues;
+        
         // Build venue color map
         buildVenueColorMap(venues);
+        
+        // Load venue selections from localStorage
+        loadVenueSelections(venues);
         
         // Build events map by date
         buildEventsMap(events);
@@ -138,6 +148,40 @@ function buildVenueColorMap(venues) {
         const color = VENUE_COLORS[index % VENUE_COLORS.length];
         venueColorMap.set(venue.id, color);
     });
+}
+
+/**
+ * Load venue selections from localStorage
+ */
+function loadVenueSelections(venues) {
+    selectedVenues.clear();
+    
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const savedIds = JSON.parse(stored);
+            savedIds.forEach(id => selectedVenues.add(id));
+        } else {
+            // Default: all venues selected
+            venues.forEach(venue => selectedVenues.add(venue.id));
+        }
+    } catch (error) {
+        console.error('Error loading venue selections:', error);
+        // Default: all venues selected
+        venues.forEach(venue => selectedVenues.add(venue.id));
+    }
+}
+
+/**
+ * Save venue selections to localStorage
+ */
+function saveVenueSelections() {
+    try {
+        const selectedIds = Array.from(selectedVenues);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedIds));
+    } catch (error) {
+        console.error('Error saving venue selections:', error);
+    }
 }
 
 /**
@@ -170,7 +214,7 @@ function formatDateKey(date) {
 }
 
 /**
- * Render venue legend
+ * Render venue legend with checkboxes
  */
 function renderLegend(venues) {
     const legendContainer = document.getElementById('calendar-legend');
@@ -182,11 +226,18 @@ function renderLegend(venues) {
     
     const legendItems = venues.map(venue => {
         const color = venueColorMap.get(venue.id) || '#6c757d';
+        const isChecked = selectedVenues.has(venue.id);
         return `
-            <div class="legend-item">
+            <label class="legend-item legend-item-checkbox">
+                <input 
+                    type="checkbox" 
+                    class="legend-checkbox" 
+                    data-venue-id="${venue.id}"
+                    ${isChecked ? 'checked' : ''}
+                >
                 <span class="legend-dot" style="background-color: ${color};"></span>
                 <span class="legend-label">${escapeHtml(venue.name)}</span>
-            </div>
+            </label>
         `;
     }).join('');
     
@@ -198,6 +249,39 @@ function renderLegend(venues) {
             </div>
         </div>
     `;
+    
+    // Attach checkbox event listeners
+    attachLegendListeners();
+}
+
+/**
+ * Attach legend checkbox event listeners
+ */
+function attachLegendListeners() {
+    const checkboxes = document.querySelectorAll('.legend-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', handleVenueToggle);
+    });
+}
+
+/**
+ * Handle venue checkbox toggle
+ */
+function handleVenueToggle(event) {
+    const venueId = event.target.dataset.venueId;
+    
+    if (event.target.checked) {
+        selectedVenues.add(venueId);
+    } else {
+        selectedVenues.delete(venueId);
+    }
+    
+    // Save to localStorage
+    saveVenueSelections();
+    
+    // Re-render calendar with filtered events
+    renderCalendar(currentYear);
 }
 
 /**
@@ -246,9 +330,14 @@ function renderMonth(year, monthIndex) {
     // Day cells
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayEvents = eventsMap.get(dateKey) || [];
+        const allDayEvents = eventsMap.get(dateKey) || [];
         
-        dayCells.push(renderDayCell(day, dayEvents, dateKey));
+        // Filter events by selected venues
+        const filteredEvents = allDayEvents.filter(event => 
+            !event.venue_id || selectedVenues.has(event.venue_id)
+        );
+        
+        dayCells.push(renderDayCell(day, filteredEvents, dateKey));
     }
     
     // Weekday headers
@@ -339,12 +428,17 @@ function attachDayEventListeners() {
  */
 function handleDayHover(event) {
     const dateKey = event.currentTarget.dataset.date;
-    const events = eventsMap.get(dateKey) || [];
+    const allEvents = eventsMap.get(dateKey) || [];
     
-    if (events.length === 0) return;
+    // Filter events by selected venues
+    const filteredEvents = allEvents.filter(event => 
+        !event.venue_id || selectedVenues.has(event.venue_id)
+    );
+    
+    if (filteredEvents.length === 0) return;
     
     clearTimeout(tooltipTimeout);
-    showTooltip(event.currentTarget, events);
+    showTooltip(event.currentTarget, filteredEvents);
 }
 
 /**
@@ -365,12 +459,17 @@ function handleDayClick(event) {
     // On mobile, toggle tooltip
     if (window.innerWidth < 768) {
         const dateKey = event.currentTarget.dataset.date;
-        const events = eventsMap.get(dateKey) || [];
+        const allEvents = eventsMap.get(dateKey) || [];
+        
+        // Filter events by selected venues
+        const filteredEvents = allEvents.filter(evt => 
+            !evt.venue_id || selectedVenues.has(evt.venue_id)
+        );
         
         if (tooltip.style.display === 'block' && tooltip.dataset.currentDate === dateKey) {
             hideTooltip();
         } else {
-            showTooltip(event.currentTarget, events, dateKey);
+            showTooltip(event.currentTarget, filteredEvents, dateKey);
         }
     }
 }
